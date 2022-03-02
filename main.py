@@ -14,7 +14,7 @@ fieldnames = ["name", "type", "rate", "description", "accreditations", "treatmen
               "financials", "levels_of_care", "clinical_services", "amenities", "address", "url", "website", "phone"]
 
 def writeToCsv():
-    with open('test.csv', 'w') as csvfile:
+    with open('companies.csv', 'w') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(companies)
