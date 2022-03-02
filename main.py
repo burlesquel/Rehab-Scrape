@@ -2,6 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 import time
 import csv
 
@@ -156,7 +158,7 @@ def getCompanyInfo(link):
     writeToCsv()
 
 
-driver = webdriver.Chrome('./chromedriver')
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 driver.get("https://www.rehab.com/search?page=1")
 time.sleep(3)
 content = driver.page_source
