@@ -1,4 +1,3 @@
-from pydoc import classname
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -18,13 +17,6 @@ def getCompanyInfo(link):
 
     r = requests.get(link)
     soup = BeautifulSoup(r.text, 'html.parser')
-    programsHTML = soup.find(id="programs").find_all("p")
-    financialsHTML = soup.find(id="financials").find_all("p")
-    amenitiesHTML = soup.find(id="amenities").find_all(class_="text")
-    accreditationsHTML = soup.find(id="accreditations").find_all("h3")
-    treatmentsHTML = soup.find(id="treatment").find_all("h3")
-    levelOfCareHTML = soup.find(id="level_of_care").find_all("h3")
-    clinicalServicesHTML = soup.find(id="clinicalservices").find_all("h3")
 
     accreditations = []
     treatments = []
@@ -35,57 +27,106 @@ def getCompanyInfo(link):
     amenities = []
 
     try:
+        programsHTML = soup.find(id="programs").find_all("p")
         for program in programsHTML:
             programs.append(program.text.replace("\n", "").replace(":", ""))
     except:
-        print("program cannot be added")
+        print("program cannot be found for this page: "+ link)
 
     try:
+        financialsHTML = soup.find(id="financials").find_all("p")
         for financial in financialsHTML:
             financials.append(financial.text.replace(
                 "\n", "").replace(":", ""))
     except:
-        print("financial cannot be added")
+        print("financial cannot be found for this page: "+ link)
 
     try:
+        amenitiesHTML = soup.find(id="amenities").find_all(class_="text")
         for amenity in amenitiesHTML:
             amenities.append(amenity.text.replace("\n", "").replace(":", ""))
     except:
-        print("amenity cannot be added")
+        print("amenity cannot be found for this page: "+ link)
 
     try:
+        accreditationsHTML = soup.find(id="accreditations").find_all("h3")
         for accreditation in accreditationsHTML:
             accreditations.append(
                 accreditation.text.replace("\n", "").replace(":", ""))
     except:
-        print("accreditation cannot be added")
+        print("accreditation cannot be found for this page: "+ link)
 
     try:
+        treatmentsHTML = soup.find(id="treatment").find_all("h3")
         for treatment in treatmentsHTML:
             treatments.append(treatment.text.replace(
                 "\n", "").replace(":", ""))
     except:
-        print("treatment cannot be added")
+        print("treatment cannot be found for this page: "+ link)
 
     try:
+        levelOfCareHTML = soup.find(id="level_of_care").find_all("h3")
         for levelOfCare in levelOfCareHTML:
             levelOfCares.append(levelOfCare.text.replace(
                 "\n", "").replace(":", ""))
     except:
-        print("levelOfCare cannot be added")
+        print("levelOfCare cannot be found for this page: "+ link)
 
     try:
+        clinicalServicesHTML = soup.find(id="clinicalservices").find_all("h3")
         for clinicalService in clinicalServicesHTML:
             clinicalServices.append(
                 clinicalService.text.replace("\n", "").replace(":", ""))
     except:
-        print("financial cannot be added")
+        print("clinical services cannot be found for this page: "+ link)
+
+    try:
+        name = soup.find(id="hfn").get("title").replace("\n", "")
+    except:
+        print("name cannot be found for this page: "+ link)
+        name = ""
+
+    try:
+        type = soup.find(class_="vertical").text.replace("\n", "")
+    except:
+        print("type cannot be found for this page: "+ link)
+        type = ""
+
+    try:
+        rate = soup.find(id="reviews-summary").div.get("title").replace("\n", "")
+    except:
+        print("rate cannot be found for this page: "+ link)
+        rate = ""
+
+    try:
+        description = soup.find(id="header-description").text.replace("\n", "")
+    except:
+        print("description cannot be found for this page: "+ link)
+        description = ""
+
+    try:
+        address = soup.find(id="contact").div.text.replace("\n", "")
+    except:
+        print("address cannot be found for this page: "+ link)
+        address = ""
+
+    try:
+        website = soup.find(class_="text url").a.get("href").replace("\n", "")
+    except:
+        print("website cannot be found for this page: "+ link)
+        website = ""
+
+    try:
+        phone = soup.find(class_="phone call-rehab-trigger").get("href").replace("\n", "")
+    except:
+        print("phone cannot be found for this page: "+ link)
+        phone = ""
 
     company = {
-        "name": soup.find(id="hfn").get("title").replace("\n", ""),
-        "type": soup.find(class_="vertical").text.replace("\n", ""),
-        "rate": soup.find(id="reviews-summary").div.get("title").replace("\n", ""),
-        "description": soup.find(id="header-description").text.replace("\n", ""),
+        "name": name,
+        "type": type,
+        "rate": rate,
+        "description": description,
         "accreditations": ",".join(accreditations),
         "treatment": ",".join(treatments),
         "programs": ",".join(programs),
@@ -93,17 +134,17 @@ def getCompanyInfo(link):
         "levels_of_care": ",".join(levelOfCares),
         "clinical_services": ",".join(clinicalServices),
         "amenities": ",".join(amenities),
-        "address": soup.find(id="contact").div.text.replace("\n", ""),
+        "address": address,
         "url": link,
-        "website": soup.find(class_="text url").a.get("href").replace("\n", ""),
-        "phone": soup.find(class_="phone call-rehab-trigger").get("href").replace("\n", "")
+        "website": website,
+        "phone": phone
     }
     print(company)
     companies.append(company)
 
 
 driver = webdriver.Chrome('./chromedriver')
-for page in range(1, 3):
+for page in range(1, 10):
     driver.get("https://www.rehab.com/search?page="+str(page))
     time.sleep(3)
     images = driver.find_elements_by_class_name("image")
@@ -113,7 +154,7 @@ for page in range(1, 3):
             getCompanyInfo(link)
             success = success + 1
         except Exception as e:
-            print("an error ocurred")
+            print("an error ocurred for this page: "+ link)
             fail = fail + 1
             print(e)
 
