@@ -1,27 +1,42 @@
+from fileinput import filename
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
+import pandas as pd
 import time
 import csv
 
 success = 0
 fail = 0
 
+companyOrder = 0
+
 companies = []
 
 fieldnames = ["name", "type", "rate", "description", "accreditations", "treatment", "programs",
               "financials", "levels_of_care", "clinical_services", "amenities", "address", "url", "website", "phone"]
 
-def writeToCsv():
-    with open('companies.csv', 'w') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(companies)
-        # successRate = (success / (success + fail)) * 100
-        # print("Process completed. Success rate is: %"+str(successRate))
+# def writeToCsv():
+#     with open('companies.csv', 'w') as csvfile:
+#         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+#         writer.writeheader()
+#         writer.writerows(companies)
+#         # successRate = (success / (success + fail)) * 100
+#         # print("Process completed. Success rate is: %"+str(successRate))
+
+
+def newCSV(name, fieldNames):
+    df = pd.DataFrame({}, columns=fieldNames)
+    df.to_csv(str(name)+".csv", index=False)
+
+
+def appendToCSV(companyObject, fileName):
+    df = pd.DataFrame([companyObject])
+    df.to_csv(str(fileName)+".csv", mode='a', index=False, header=False)
 
 
 def getCompanyInfo(link):
@@ -154,29 +169,55 @@ def getCompanyInfo(link):
         "phone": phone
     }
     print(company)
-    companies.append(company)
-    writeToCsv()
+    return company
 
 
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+chrome_options = Options()
+
+chrome_options.add_argument('--no-sandbox')
+chrome_options.add_argument('--headless')
+chrome_options.add_argument('--disable-dev-shm-usage')
+chrome_options.add_argument("--disable-extensions")
+driver = webdriver.Chrome(chrome_options=chrome_options,
+                          service=Service(ChromeDriverManager().install()))
 driver.get("https://www.rehab.com/search?page=1")
 time.sleep(3)
 content = driver.page_source
 soup = BeautifulSoup(content, 'html.parser')
 a = soup.find(class_="number").text
-companyNumber = int(a.split(" ")[0].replace(",",""))
+companyNumber = int(a.split(" ")[0].replace(",", ""))
 
 pageNumber = (int(companyNumber/100)) + 1
-print(pageNumber)
+print(str(pageNumber)+" pages have found.")
 for page in range(1, pageNumber+1):
     driver.get("https://www.rehab.com/search?page="+str(page))
+
+    counter = 1000
+    fileNameCounter = 0
+
     time.sleep(3)
-    images = driver.find_elements_by_class_name("image")
-    for image in images:
-        link = image.find_element_by_tag_name("a").get_attribute("href")
+    images = driver.find_elements(by=By.CLASS_NAME, value="image")
+    
+    for image in images:  # for each company
+
+        link = image.find_element(by=By.TAG_NAME, value="a").get_attribute("href")
+        
         try:
-            getCompanyInfo(link)
-            success = success + 1
+
+            if counter == 1000:
+                counter = 0
+                fileNameCounter = fileNameCounter + 1
+                newCSV("data"+str(fileNameCounter), fieldnames)
+                companyObject = getCompanyInfo(link)
+                appendToCSV(companyObject, "data"+str(fileNameCounter))
+
+            else:
+                companyObject = getCompanyInfo(link)
+                appendToCSV(companyObject, "data"+str(fileNameCounter))
+                success = success + 1
+
+            counter = counter + 1
+
         except Exception as e:
             print("error found for this page: " + link)
             content = driver.page_source
@@ -184,8 +225,6 @@ for page in range(1, pageNumber+1):
                 print("captcha detected for this page: " + link)
             fail = fail + 1
             print(e)
-       
+
         companyNumber = companyNumber - 1
         print(str(companyNumber)+" COMPANY LEFT.")
-
-
